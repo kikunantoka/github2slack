@@ -1,0 +1,8 @@
+{
+  "account_map": {
+    "@github_name": "@slack_name"
+  },
+  "channel_map": {
+    "repository_name": "#channel_name"
+  }
+}
