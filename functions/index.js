@@ -19,7 +19,7 @@ exports.githubWebhook = functions.https.onRequest((req, res) => {
     console.error('x-hub-signature', signature, 'did not match', expectedSignature);
     return res.status(403).send('Your x-hub-signature\'s bad and you should feel bad!');
   }
-
+  
   switch (req.headers["x-github-event"]) {
     case 'issue_comment':
     case 'pull_request_review_comment':
@@ -29,12 +29,15 @@ exports.githubWebhook = functions.https.onRequest((req, res) => {
       mentions += extractMentionNamesFromBody(req.body.review.body);
       break;
     case 'pull_request':
-      mentions += extractMentionNamesFromBody(req.body.pull_request.body);
+      if (req.body.pull_request.state === 'open') {
+        mentions += extractMentionNamesFromBody(req.body.pull_request.body);
+        mentions += extractMentionNamesFromAssignees(req.body.pull_request.assignees);
+      }
       break;
     case 'issues':
-      let assignees = req.body.issue.assignees;
-      if (assignees && assignees.length > 0) {
-        mentions += extractMentionNamesFromAssignees(assignees);
+      if (req.body.issue.state === 'open') {
+        mentions += extractMentionNamesFromBody(req.body.issue.body);
+        mentions += extractMentionNamesFromAssignees(req.body.issue.assignees);
       }
       break;
   }
@@ -74,6 +77,7 @@ function extractMentionNamesFromBody(body) {
 };
 
 function extractMentionNamesFromAssignees(assignees) {
+  if (!assignees || assignees.length == 0) return '';
   let result = '';
   assignees.forEach(function(assignee) {
     result += convertMentionName("@" + assignee.login) + "\n";
